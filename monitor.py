@@ -119,8 +119,9 @@ def main():
     c.execute("SELECT username FROM followers")
     previous_followers = set([row[0] for row in c.fetchall()])
 
-    # Detect unfollowers
+    # Detect unfollowers and new followers
     unfollowers = previous_followers - followers
+    new_followers = followers - previous_followers
 
     # Send alerts for unfollowers
     if unfollowers:
@@ -129,6 +130,15 @@ def main():
         )
         logger.info(f"Detected unfollowers: {', '.join(unfollowers)}")
         if ENABLE_TELEGRAM_NOTIFICATIONS:
+            send_telegram_message(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, message, logger)
+
+    # Log new followers
+    if new_followers:
+        logger.info(f"New followers: {', '.join(new_followers)}")
+        if ENABLE_TELEGRAM_NOTIFICATIONS:
+            message = f"🎉 {INSTAGRAM_TARGET_ACCOUNT} has new followers:\n" + "\n".join(
+                new_followers
+            )
             send_telegram_message(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, message, logger)
 
     # Update followers table
@@ -143,6 +153,30 @@ def main():
     c.execute("SELECT username FROM followees")
     previous_followees = set([row[0] for row in c.fetchall()])
 
+    # Detect new followees and unfollowed accounts
+    unfollowed = previous_followees - followees
+    new_followees = followees - previous_followees
+
+    # Log unfollowed accounts
+    if unfollowed:
+        logger.info(f"Unfollowed accounts: {', '.join(unfollowed)}")
+        if ENABLE_TELEGRAM_NOTIFICATIONS:
+            message = (
+                f"🚫 {INSTAGRAM_TARGET_ACCOUNT} has unfollowed accounts:\n"
+                + "\n".join(unfollowed)
+            )
+            send_telegram_message(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, message, logger)
+
+    # Log new followees
+    if new_followees:
+        logger.info(f"New followees: {', '.join(new_followees)}")
+        if ENABLE_TELEGRAM_NOTIFICATIONS:
+            message = (
+                f"➕ {INSTAGRAM_TARGET_ACCOUNT} has started following:\n"
+                + "\n".join(new_followees)
+            )
+            send_telegram_message(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, message, logger)
+
     # Update followees table
     c.execute("DELETE FROM followees")
     c.executemany(
@@ -155,12 +189,12 @@ def main():
 
     # Send message about not following back
     if not_following_back:
-        message = (
-            f"ℹ️ Accounts {INSTAGRAM_TARGET_ACCOUNT} follows who do not follow back:\n"
-            + "\n".join(not_following_back)
-        )
         logger.info(f"Accounts not following back: {', '.join(not_following_back)}")
         if ENABLE_TELEGRAM_NOTIFICATIONS:
+            message = (
+                f"ℹ️ Accounts {INSTAGRAM_TARGET_ACCOUNT} follows who do not follow back:\n"
+                + "\n".join(not_following_back)
+            )
             send_telegram_message(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, message, logger)
 
     # Commit and close
