@@ -1,0 +1,15 @@
+version: '3'
+
+services:
+  instagram-monitor:
+    build: .
+    environment:
+      - INSTAGRAM_USERNAME
+      - INSTAGRAM_PASSWORD
+      - INSTAGRAM_TARGET_ACCOUNT
+      - ENABLE_TELEGRAM_NOTIFICATIONS
+      - TELEGRAM_BOT_TOKEN
+      - TELEGRAM_CHAT_ID
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
